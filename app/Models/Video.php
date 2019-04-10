@@ -12,6 +12,9 @@
 namespace App\Models;
 
 use App\User;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 
 class Video extends Model
@@ -26,11 +29,13 @@ class Video extends Model
         'url', 'view_num', 'short_description', 'description',
         'seo_keywords', 'seo_description', 'published_at',
         'is_show', 'charge', 'aliyun_video_id',
+        'chapter_id', 'duration', 'tencent_video_id',
     ];
 
-    protected $appends = [
-        'edit_url', 'destroy_url',
-    ];
+    public function getPublishedAtAttribute($publishedAt)
+    {
+        return Carbon::parse($publishedAt);
+    }
 
     /**
      * 所属用户.
@@ -76,22 +81,20 @@ class Video extends Model
         return $query->where('published_at', '<=', date('Y-m-d H:i:s'));
     }
 
-    public function getEditUrlAttribute()
-    {
-        return route('backend.video.edit', $this);
-    }
-
-    public function getDestroyUrlAttribute()
-    {
-        return route('backend.video.destroy', $this);
-    }
-
     /**
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function comments()
     {
         return $this->hasMany(VideoComment::class, 'video_id');
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function chapter()
+    {
+        return $this->belongsTo(CourseChapter::class, 'chapter_id');
     }
 
     /**
@@ -103,5 +106,60 @@ class Video extends Model
     {
         return $this->belongsToMany(User::class, 'user_video', 'video_id', 'user_id')
             ->withPivot('charge', 'created_at');
+    }
+
+    /**
+     * 评论处理.
+     *
+     * @param string $content
+     *
+     * @return false|Model
+     */
+    public function commentHandler(string $content)
+    {
+        $comment = $this->comments()->save(new VideoComment([
+            'user_id' => Auth::id(),
+            'content' => $content,
+        ]));
+
+        return $comment;
+    }
+
+    /**
+     * 获取视频的播放地址[阿里云|本地].
+     *
+     * @return array
+     */
+    public function getPlayInfo()
+    {
+        if ($this->aliyun_video_id != '') {
+            $playInfo = aliyun_play_url($this);
+            Log::info(json_encode($playInfo));
+
+            return $playInfo;
+        }
+
+        return [
+            [
+                'format' => pathinfo($this->url, PATHINFO_EXTENSION),
+                'url' => $this->url,
+                'duration' => 0,
+            ],
+        ];
+    }
+
+    /**
+     * 获取视频播放地址
+     *
+     * @return mixed
+     */
+    public function getPlayUrl()
+    {
+        if ($this->url) {
+            return $this->url;
+        }
+        $playInfo = aliyun_play_url($this);
+
+        return isset($playInfo[0]) ? $playInfo[0]['url'] : '';
     }
 }

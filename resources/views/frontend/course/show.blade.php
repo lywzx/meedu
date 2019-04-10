@@ -1,28 +1,74 @@
 @extends('layouts.app')
 
-@section('css')
-    <link href="https://cdn.bootcss.com/social-share.js/1.0.16/css/share.min.css" rel="stylesheet">
-@endsection
-
 @section('content')
 
-    <div class="container-fluid course-detail-banner">
+    <header class="header bg-ui-general header-inverse">
+        <div class="header-info">
+            <h1 class="header-title">
+                <strong>{{ $course->title }}</strong>
+                <small>
+                    @if($course->charge)
+                        <span class="badge badge-danger">价格 {{$course->charge}}元</span>
+                    @else
+                        <span class="badge badge-success">免费</span>
+                    @endif
+                </small>
+            </h1>
+
+        </div>
+    </header>
+
+    <div class="container">
         <div class="row">
             <div class="col-sm-12">
-                <div class="container">
-                    <div class="row">
-                        <div class="col-sm-12">
-                            <h2 class="color-fff">{{ $course->title }}</h2>
-                            <p class="lh-30">
-                                <span class="label label-default">
-                                    更新于 {{ $course->created_at->diffForHumans() }}
-                                </span>
-                                @if($course->charge)
-                                    <span class="label label-danger">价格 {{$course->charge}}元</span>
-                                @else
-                                    <span class="label label-success">免费</span>
-                                @endif
-                            </p>
+                <div class="card">
+                    <div class="card-body">
+                        <ul class="nav nav-tabs">
+                            <li class="nav-item">
+                                <a class="nav-link active" data-toggle="tab" href="#intro">课程介绍</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-toggle="tab" href="#videos">视频列表</a>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content">
+                            <div class="tab-pane fade active show" id="intro">
+                                {!! $course->getDescription() !!}
+                            </div>
+                            <div class="tab-pane fade" id="videos">
+                                <div class="media-list media-list-divided">
+                                    @if($course->hasChaptersCache())
+                                        @foreach($course->getChaptersCache() as $chapter)
+                                            <h5 class="bl-2 border-primary pl-1 text-primary">{{$chapter->title}}</h5>
+                                            <div class="media-list-body">
+                                                @foreach($chapter->getVideosCache() as $video)
+                                                    <a class="media media-single" href="{{route('video.show', [$video->course_id, $video->id, $video->slug])}}">
+                                                        <h5 class="title">
+                                                            {{$video->title}}
+                                                            @if($video->charge > 0)<br><span class="badge badge-primary">Pro</span></br>@endif
+                                                        </h5>
+                                                        <time datetime="{{$video->published_at}}">{{$video->published_at->diffForHumans()}}</time>
+                                                    </a>
+                                                @endforeach
+                                            </div>
+                                        @endforeach
+
+                                        @else
+
+                                        @foreach($course->getAllPublishedAndShowVideosCache() as $video)
+                                            <a class="media media-single" href="{{route('video.show', [$video->course_id, $video->id, $video->slug])}}">
+                                                <h6 class="title">
+                                                    {{$video->title}}
+                                                    @if($video->charge > 0)<br><span class="badge badge-primary">Pro</span></br>@endif
+                                                </h6>
+                                                <time datetime="{{$video->published_at}}">{{$video->published_at->diffForHumans()}}</time>
+                                            </a>
+                                        @endforeach
+
+                                    @endif
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -30,115 +76,6 @@
         </div>
     </div>
 
-    <div class="container course-show-box">
-        <div class="row">
-            <div class="col-sm-9 border course-video-list-box">
-                <div class="row course-video-tab">
-                    <div class="col-sm-4 course-video-tab-item active" data="intro">简介</div>
-                    <div class="col-sm-4 course-video-tab-item" data="list">视频列表</div>
-                    <div class="col-sm-4 course-video-tab-item" data="comment">评论</div>
-                </div>
-               <div class="tab-content-box">
-                   <div class="intro">
-                       {!! $course->getDescription() !!}
-                       <hr>
-                       <div class="social-share"></div>
-                   </div>
-                   <div class="list" style="display: none">
-                       <table style="width: 100%">
-                           @forelse($course->getAllPublishedAndShowVideosCache() as $video)
-                               <tr class="lh-30">
-                                   <td>
-                                       <a href="{{ route('video.show', [$course->id, $video->id, $video->slug]) }}">
-                                           <i class="fa fa-play-circle-o" aria-hidden="true"></i> {{ $video->title  }}
-                                       </a>
-                                   </td>
-                                   <td width="80" class="text-right">{{ $video->updated_at->diffForHumans() }}</td>
-                               </tr>
-                           @empty
-                               <tr>
-                                   <td colspan="2" class="text-center">暂无数据</td>
-                               </tr>
-                           @endforelse
-                       </table>
-                   </div>
-                   <div class="comment" style="display: none">
+    @include('components.frontend.comment', ['submitUrl' => route('ajax.course.comment', $course), 'comments' => $comments])
 
-                       @include('components.frontend.comment_box', ['submitUrl' => route('course.comment', $course)])
-
-                       <div class="col-sm-12">
-                           <table class="comment-list-box">
-                               <tbody>
-                               @forelse($course->comments as $comment)
-                               <tr class="comment-list-item">
-                                   <td width="70" class="user-info">
-                                       <p><img class="avatar" src="{{$comment->user->avatar}}" width="50" height="50"></p>
-                                       <p class="nickname">
-                                           {{$comment->user->nick_name}}
-                                       </p>
-                                       @if($comment->user->role)
-                                           <p class="nickname">{{$comment->user->role->name}}</p>
-                                       @endif
-                                   </td>
-                                   <td class="comment-content">
-                                       <p>{!! $comment->getContent() !!}</p>
-                                       <p class="text-right color-gray">{{$comment->created_at->diffForHumans()}}</p>
-                                   </td>
-                               </tr>
-                               @empty
-                               <tr>
-                                   <td class="text-center color-gray" colspan="2">0评论</td>
-                               </tr>
-                               @endforelse
-                               </tbody>
-                           </table>
-                       </div>
-
-                   </div>
-               </div>
-            </div>
-
-            <div class="col-sm-3 course-show-page-right">
-                <div class="col-sm-12 border option">
-                    <a href="{{ $course->seeUrl() }}" class="join-course-btn">立即学习</a>
-                </div>
-
-                <div class="col-sm-12 border news-student">
-                    <h4>新加入同学</h4>
-                    <ul>
-                        @forelse($course->getNewJoinMembersCache() as $member)
-                            <li>
-                                <img src="{{ $member->avatar }}" width="24" height="24">
-                                <b>{{ $member->nick_name }}</b>
-                                <span class="color-gray font-size-12">{{$member->pivot->created_at}}</span>
-                            </li>
-                            @empty
-                            <li>
-                                <p class="text-center lh-30 color-gray">暂无数据</p>
-                            </li>
-                        @endforelse
-                    </ul>
-                </div>
-
-            </div>
-
-        </div>
-    </div>
-
-@endsection
-
-@section('js')
-    <script src="https://cdn.bootcss.com/social-share.js/1.0.16/js/social-share.min.js"></script>
-    @include('components.frontend.emoji')
-    @include('components.frontend.comment_js')
-    <script>
-        $(function () {
-            $('.course-video-tab-item').click(function () {
-                $('.course-video-tab-item').removeClass('active');
-                $(this).addClass('active');
-                $('.tab-content-box .' + $(this).attr('data')).show();
-                $('.tab-content-box .' + $(this).attr('data')).siblings().hide();
-            });
-        });
-    </script>
 @endsection

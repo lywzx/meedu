@@ -11,21 +11,21 @@ return [
 
         // 头像
         'default_avatar' => '/images/default_avatar.jpg',
-    ],
 
-    // 系统结算
-    'credit' => [
-        'credit1' => [
-            'name' => '余额',
-            'use' => true,
-        ],
-        'credit2' => [
-            'name' => '积分',
-            'use' => true,
-        ],
-        'credit3' => [
-            'name' => '金币',
-            'use' => true,
+        // Socialite
+        'socialite' => [
+            'github' => [
+                'app' => 'github',
+                'name' => 'Github',
+                'icon' => '<i class="fa fa-github" aria-hidden="true"></i>',
+                'enabled' => 0,
+            ],
+            'qq' => [
+                'app' => 'qq',
+                'name' => 'QQ',
+                'icon' => '<i class="fa fa-qq" aria-hidden="true"></i>',
+                'enabled' => 0,
+            ],
         ],
     ],
 
@@ -52,10 +52,29 @@ return [
     
     // 支付网关
     'payment' => [
-        'youzan' => [
-            'client_id' => env('YOUZAN_CLIENT_ID', ''),
-            'client_secret' => env('YOUZAN_CLIENT_SECRET', ''),
-            'kdt_id' => env('YOUZAN_CLIENT_KDT_ID', ''),
+        'alipay' => [
+            'handler' => \App\Meedu\Payment\Alipay\Alipay::class,
+            'name' => '支付宝',
+            'sign' => 'alipay',
+            'default_method' => 'web',
+            'pc' => true,
+            'enabled' => 0,
+        ],
+        'wechat' => [
+            'handler' => \App\Meedu\Payment\Wechat\Wechat::class,
+            'name' => '微信支付',
+            'sign' => 'wechat',
+            'default_method' => 'scan',
+            'pc' => true,
+            'enabled' => 0,
+        ],
+        'eshanghu' => [
+            'handler' => \App\Meedu\Payment\Eshanghu\Eshanghu::class,
+            'name' => '微信扫码支付',
+            'sign' => 'eshanghu',
+            'default_method' => 'scan',
+            'pc' => true,
+            'enabled' => 1,
         ],
     ],
 
@@ -81,8 +100,38 @@ return [
     // 系统配置
     'system' => [
         'cache' => [
-            'status' => 0,
+            'status' => -1,
             'expire' => 360,
         ],
+        'test' => explode(',', env('TEST_MOBILE', '')),
+        'js' => '',
+        'theme' => [
+            'use' => 'default',
+            'path' => resource_path('views'),
+        ],
+        'sms' => 'yunpian',
+    ],
+
+    // 视频鉴权
+    'video' => [
+        'auth' => [
+            'aliyun' => [
+                'private_key' => env('ALIYUN_VIDEO_AUTH_PRIVATE_KEY', ''),
+            ],
+        ],
+    ],
+
+    // advance
+    'advance' => [
+        'layout_footer' => env('LAYOUT_FOOTER') ?: 'components.frontend.footer',
+        'template_index' => env('TEMPLATE_INDEX') ?: 'frontend.index.index',
+    ],
+
+    // MeEduCloud
+    'cloud' => [
+        'client_id' => 2,
+        'client_secret' => 'MUe00r1VZ5PnT3R5vR3Em3W343YEzmAdrB48ZgYG',
+        'username' => env('MEEDU_CLOUD_USERNAME', ''),
+        'password' => env('MEEDU_CLOUD_PASSWORD', ''),
     ],
 ];

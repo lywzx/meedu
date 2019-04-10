@@ -12,6 +12,7 @@
 namespace App\Models;
 
 use App\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -31,10 +32,6 @@ class Course extends Model
         'seo_description', 'published_at', 'is_show',
     ];
 
-    protected $appends = [
-        'edit_url', 'destroy_url',
-    ];
-
     /**
      * 该课程所属用户.
      *
@@ -43,6 +40,14 @@ class Course extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function chapters()
+    {
+        return $this->hasMany(CourseChapter::class, 'course_id');
     }
 
     /**
@@ -102,16 +107,6 @@ class Course extends Model
         return $query->where('published_at', '<=', date('Y-m-d H:i:s'));
     }
 
-    public function getEditUrlAttribute()
-    {
-        return route('backend.course.edit', $this);
-    }
-
-    public function getDestroyUrlAttribute()
-    {
-        return route('backend.course.destroy', $this);
-    }
-
     /**
      * 作用域：关键词搜索.
      *
@@ -132,7 +127,7 @@ class Course extends Model
      */
     public function getDescription()
     {
-        return markdown_to_html($this->description);
+        return $this->description;
     }
 
     /**
@@ -140,16 +135,15 @@ class Course extends Model
      */
     public function getAllPublishedAndShowVideosCache()
     {
-        if (! config('meedu.system.cache.status')) {
+        if (config('meedu.system.cache.status', -1) != 1) {
             return $this->getAllPublishedAndShowVideos();
         }
-        $that = $this;
 
         return Cache::remember(
             "course_{$this->id}_videos",
             config('meedu.system.cache.expire', 60),
-            function () use ($that) {
-                return $that->getAllPublishedAndShowVideos();
+            function () {
+                return $this->getAllPublishedAndShowVideos();
             });
     }
 
@@ -165,6 +159,64 @@ class Course extends Model
             ->show()
             ->orderBy('published_at')
             ->get();
+    }
+
+    /**
+     * 章节缓存.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection|mixed
+     */
+    public function getChaptersCache()
+    {
+        if (config('meedu.system.cache.status', -1) != 1) {
+            return $this->getChapters();
+        }
+
+        return Cache::remember(
+            "course_{$this->id}_chapter_videos",
+            config('meedu.system.cache.expire', 60),
+            function () {
+                return $this->getChapters();
+            });
+    }
+
+    /**
+     * 获取章节
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getChapters()
+    {
+        return $this->chapters()->orderBy('sort')->get();
+    }
+
+    /**
+     * 是否存在缓存.
+     *
+     * @return bool|mixed
+     */
+    public function hasChaptersCache()
+    {
+        if (config('meedu.system.cache.status', -1) != 1) {
+            return $this->hasChapters();
+        }
+
+        return Cache::remember(
+            "course_{$this->id}_has_chapters",
+            config('meedu.system.cache.expire', 60),
+            function () {
+                return $this->hasChapters();
+            });
+    }
+
+    /**
+     * 是否存在章节
+     *
+     * @return bool
+     */
+    public function hasChapters()
+    {
+        return $this->chapters()->exists();
     }
 
     /**
@@ -223,5 +275,22 @@ class Course extends Model
     public function getNewJoinMembers()
     {
         return $this->buyUsers()->orderByDesc('pivot_created_at')->limit(10)->get();
+    }
+
+    /**
+     * 评论处理.
+     *
+     * @param string $content
+     *
+     * @return false|Model
+     */
+    public function commentHandler(string $content)
+    {
+        $comment = $this->comments()->save(new CourseComment([
+            'user_id' => Auth::id(),
+            'content' => $content,
+        ]));
+
+        return $comment;
     }
 }

@@ -1,164 +1,103 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>MeEDU后台管理系统</title>
-    <link href="{{ mix('css/backend.css') }}" rel="stylesheet">
-    @yield('css')
-</head>
-<body>
+@extends('layouts.backend_base')
 
-<div id="app">
+@section('base')
 
-    <header class="backend-header">
-        <el-row>
-            <el-col :span="12">
-                <span class="backend-header-logo">MeEdu</span>
-            </el-col>
-            <el-col :span="12" class="backend-header-right-section">
-                <el-dropdown class="administrator">
-                  <span class="el-dropdown-link">
-                    {{ Auth::guard('administrator')->user()->name }} <i class="el-icon-arrow-down el-icon--right"></i>
-                  </span>
-                    <el-dropdown-menu slot="dropdown">
-                        <el-dropdown-item>
-                            <a href="{{ route('backend.edit.password') }}">修改密码</a>
-                        </el-dropdown-item>
-                        <el-dropdown-item>
-                            <a href="{{ route('backend.logout') }}">安全退出</a>
-                        </el-dropdown-item>
-                    </el-dropdown-menu>
-                </el-dropdown>
-            </el-col>
-        </el-row>
+    <!-- Preloader -->
+    <div class="preloader">
+        <div class="spinner-dots">
+            <span class="dot1"></span>
+            <span class="dot2"></span>
+            <span class="dot3"></span>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar sidebar-icons-right sidebar-icons-boxed sidebar-expand-lg">
+        <header class="sidebar-header">
+            <span class="logo">
+                <a href="{{route('backend.dashboard.index')}}" style="font-size: 2rem;">MeEdu</a>
+            </span>
+        </header>
+
+        <nav class="sidebar-navigation">
+            <ul class="menu">
+                @foreach(backend_menus() as $menu)
+                    <li class="menu-item {{menu_is_active($menu->id) ? 'active open' : ''}}">
+                        <a class="menu-link" href="#">
+                            <span class="title">{{$menu->name}}</span>
+                            <span class="arrow"></span>
+                        </a>
+                        <ul class="menu-submenu">
+                            @foreach($menu->children as $child)
+                                <li class="menu-item {{menu_is_active($child->id) ? 'active' : ''}}">
+                                    <a class="menu-link" href="{{$child->url}}">
+                                        <span class="dot"></span>
+                                        <span class="title">{{$child->name}}</span>
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </li>
+                @endforeach
+            </ul>
+        </nav>
+    </aside>
+    <!-- END Sidebar -->
+
+
+    <!-- Topbar -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <span class="topbar-btn sidebar-toggler"><i>&#9776;</i></span>
+        </div>
+
+        <div class="topbar-right">
+            <ul class="topbar-btns">
+                <li class="dropdown">
+                    <span class="topbar-btn" data-toggle="dropdown">{{ Auth::guard('administrator')->user()->name }}</span>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <a class="dropdown-item" href="{{ route('backend.edit.password') }}"><i class="ti-settings"></i> 修改密码</a>
+                        <a class="dropdown-item" href="{{ route('backend.logout') }}"><i class="ti-power-off"></i> 安全退出</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
     </header>
+    <!-- END Topbar -->
 
-    <section class="backend-section">
-        <div class="backend-left-menu">
-            <dl>
-                <dt>主面板</dt>
-                <dd>
-                    <ul>
-                        <li class="{{ menu_is_active('backend.dashboard.index') }}">
-                            <a href="{{ route('backend.dashboard.index') }}">主面板</a>
-                        </li>
-                    </ul>
-                </dd>
-                <dt>运营</dt>
-                <dd>
-                    <ul>
-                        <li class="{{ menu_is_active('backend.announcement.index') }}">
-                            <a href="{{ route('backend.announcement.index') }}">公告</a>
-                        </li>
-                        <li class="{{ menu_is_active('backend.role.index') }}">
-                            <a href="{{ route('backend.role.index') }}">VIP会员</a>
-                        </li>
-                        <li class="{{ menu_is_active('backend.subscription.email') }}">
-                            <a href="{{ route('backend.subscription.email') }}">邮件群发</a>
-                        </li>
-                    </ul>
-                </dd>
-                <dt>财务</dt>
-                <dd>
-                    <ul>
-                        <li class="{{ menu_is_active('backend.recharge') }}">
-                            <a href="{{ route('backend.recharge') }}">充值记录</a>
-                        </li>
-                    </ul>
-                </dd>
-                <dt>会员</dt>
-                <dd>
-                    <ul>
-                        <li class="{{ menu_is_active('backend.member.index') }}">
-                            <a href="{{ route('backend.member.index') }}">会员</a>
-                        </li>
-                    </ul>
-                </dd>
-                <dt>视频</dt>
-                <dd>
-                    <ul>
-                        <li class="{{ menu_is_active('backend.course.index') }}">
-                            <a href="{{ route('backend.course.index') }}">课程</a>
-                        </li>
-                        <li class="{{ menu_is_active('backend.video.index') }}">
-                            <a href="{{ route('backend.video.index') }}">视频</a>
-                        </li>
-                    </ul>
-                </dd>
-                <dt>FAQ</dt>
-                <dd>
-                    <ul>
-                        <li class="{{ menu_is_active('backend.faq.category.index') }}">
-                            <a href="{{ route('backend.faq.category.index') }}">分类</a>
-                        </li>
-                        <li class="{{ menu_is_active('backend.faq.article.index') }}">
-                            <a href="{{ route('backend.faq.article.index') }}">文章</a>
-                        </li>
-                    </ul>
-                </dd>
-                <dt>系统</dt>
-                <dd>
-                    <ul>
-                        <li class="{{ menu_is_active('backend.setting.index') }}">
-                            <a href="{{ route('backend.setting.index') }}">全站配置</a>
-                        </li>
-                        <li class="{{ menu_is_active('backend.administrator.index') }}">
-                            <a href="{{ route('backend.administrator.index') }}">管理员</a>
-                        </li>
-                        <li class="{{ menu_is_active('backend.administrator_role.index') }}">
-                            <a href="{{ route('backend.administrator_role.index') }}">角色</a>
-                        </li>
-                        <li class="{{ menu_is_active('backend.administrator_permission.index') }}">
-                            <a href="{{ route('backend.administrator_permission.index') }}">权限</a>
-                        </li>
-                    </ul>
-                </dd>
-            </dl>
-        </div>
-        <div class="backend-body">
-           <el-row>
-               <el-col :span="24" style="padding: 10px 20px;">
-                   @yield('body')
-               </el-col>
-           </el-row>
-        </div>
-    </section>
+    <!-- Main container -->
+    <main>
+        <div class="main-content">
+            <div class="card">
+                <h4 class="card-title">@yield('title')</h4>
+                <div class="card-body">
+                    @yield('body')
+                </div>
+            </div>
+        </div><!--/.main-content -->
 
-</div>
+        <!-- Footer -->
+        <footer class="site-footer">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="text-center text-md-left">Copyright © 2019 <a href="https://meedu.vip">MeEdu</a>. All rights reserved.</p>
+                </div>
 
-<div id="app1"></div>
+                <div class="col-md-6">
+                    <ul class="nav nav-primary nav-dotted nav-dot-separated justify-content-center justify-content-md-end">
+                        <li class="nav-item">
+                            <a class="nav-link" href="https://meedu.vip">插件</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="https://github.com/Qsnh/meedu">源码</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </footer>
+        <!-- END Footer -->
 
-<script src="{{ mix('js/backend.js') }}"></script>
-@yield('js')
-<script>
-    new Vue({
-        el: '#app1',
-        data: function () {
-            return {
-                messageSuccess: '{{ get_first_flash('success') }}',
-                messageWarning: '{{ get_first_flash('warning') }}',
-                messageError: '{{ get_first_flash('errors') }}'
-            }
-        },
-        created: function () {
-            if (this.messageSuccess) {
-                this.$message.success(this.messageSuccess);
-                return;
-            }
-            if (this.messageWarning) {
-                this.$message.warning(this.messageWarning);
-                return;
-            }
-            if (this.messageError) {
-                this.$message.warning(this.messageError);
-                return;
-            }
-        }
-    });
-</script>
-</body>
-</html>
+    </main>
+    <!-- END Main container -->
+
+    @endsection

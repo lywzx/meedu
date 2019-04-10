@@ -2,23 +2,35 @@
 
 @section('member')
 
-    <div class="row">
-        <h3>我的消息</h3>
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="card">
+                    <div class="card-header">我的消息</div>
+                    <div class="card-body">
+                        <table class="table table-hover">
+                            <tbody>
+                            @forelse($messages as $message)
+                                <tr>
+                                    <td>
+                                        {!! (new \App\Meedu\NotificationParse())->parseHTML($message) !!}
+                                    </td>
+                                </tr>
+                                @if($message->markAsRead())@endif
+                            @empty
+                                <tr><td>暂无数据</td></tr>
+                            @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-12 mt-10">
+                <div class="text-right">
+                    {{$messages->render()}}
+                </div>
+            </div>
+        </div>
     </div>
 
-    <ul class="notifications">
-        @forelse($messages as $message)
-            <li class="{{ $message->read_at ? 'color-orange' : '' }}">
-                @include('frontend.member.notifications.' . notification_name($message->type), ['notification' => $message])
-            </li>
-            @if($message->markAsRead())@endif
-        @empty
-            <li>
-                <p class="text-center lh-30 color-gray">暂无数据</p>
-            </li>
-        @endforelse
-    </ul>
-    <div class="text-right">
-        {{$messages->render()}}
-    </div>
 @endsection

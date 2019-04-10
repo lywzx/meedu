@@ -1,68 +1,44 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>MeEDU后台管理系统</title>
-    <link href="{{ mix('css/backend.css') }}" rel="stylesheet">
-</head>
-<body>
+@extends('layouts.backend_base')
 
-<div id="app">
-    <el-row>
-        <el-col :span="20" :offset="2">
-            <h1 class="login-page-logo" style="color: #409EFF">MeEdu</h1>
-        </el-col>
-        <el-col :span="8" :offset="8" style="margin-top: 50px;">
-            <h3 style="text-align: center">登录</h3>
-            <el-form label-position="top" method="post">
-                {!! csrf_field() !!}
-                <el-form-item label="邮箱">
-                    <el-input name="email" value="{{ old('email') }}" placeholder="请输入邮箱"></el-input>
-                </el-form-item>
-                <el-form-item label="密码">
-                    <el-input name="password" type="password" placeholder="请输入密码"></el-input>
-                </el-form-item>
-                <el-button type="primary" native-type="submit" style="float: right">登录</el-button>
-            </el-form>
-        </el-col>
-        <el-col class="login-page-footer" :span="20" :offset="2">
-            <p>
-                CopyRight <a href="https://github.com/Qsnh/meedu">MeEdu</a> 2018.
-            </p>
-        </el-col>
-    </el-row>
-</div>
+@section('base')
+    <div class="row min-h-fullscreen center-vh p-20 m-0">
+        <div class="col-12">
+            <div class="card card-shadowed px-50 py-30 w-400px mx-auto" style="max-width: 100%">
+                <h5 class="text-uppercase">后台登录</h5>
+                <br>
 
-<script src="{{ mix('js/backend.js') }}"></script>
-<script>
-    var vm = new Vue({
-        el: '#app',
-        data: function () {
-            return {
-                messageSuccess: '{{ get_first_flash('success') }}',
-                messageWarning: '{{ get_first_flash('warning') }}',
-                messageError: '{{ get_first_flash('errors') }}'
-            }
-        },
-        created: function () {
-            if (this.messageSuccess) {
-                this.$message.success(this.messageSuccess);
-                return;
-            }
-            if (this.messageWarning) {
-                this.$message.warning(this.messageWarning);
-                return;
-            }
-            if (this.messageError) {
-                this.$message.warning(this.messageError);
-                return;
-            }
-        }
-    });
-</script>
-</body>
-</html>
+                <form action="" method="post" class="form-type-material">
+                    @csrf
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="email" name="email" value="{{old('email')}}">
+                        <label for="email">邮箱</label>
+                    </div>
+
+                    <div class="form-group">
+                        <input type="password" class="form-control" id="password" name="password">
+                        <label for="password">密码</label>
+                    </div>
+
+                    <div class="form-group flexbox flex-column flex-md-row">
+                        <label class="custom-control custom-checkbox">
+                            <input type="checkbox" name="remember_me" value="1" class="custom-control-input" checked>
+                            <span class="custom-control-indicator"></span>
+                            <span class="custom-control-description">记住我</span>
+                        </label>
+
+                        <a class="text-muted hover-primary fs-13 mt-2 mt-md-0" href="#">忘记密码?</a>
+                    </div>
+
+                    <div class="form-group">
+                        <button class="btn btn-bold btn-block btn-primary" type="submit">登录</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <footer class="col-12 align-self-end text-center fs-13">
+            <p class="mb-0"><small>Copyright © 2019 <a href="https://meedu.vip">MeEdu</a>. All rights reserved.</small></p>
+        </footer>
+    </div>
+
+    @endsection
