@@ -13,7 +13,7 @@ namespace App\Providers;
 
 use Carbon\Carbon;
 use App\Models\CourseComment;
-use Illuminate\Pagination\Paginator;
+use Laravel\Passport\Passport;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use App\Observers\CourseCommentObserver;
@@ -28,7 +28,7 @@ class AppServiceProvider extends ServiceProvider
         Carbon::setLocale('zh');
         Schema::defaultStringLength(191);
         CourseComment::observe(CourseCommentObserver::class);
-        Paginator::useBootstrapThree();
+        Passport::routes();
 
         // 加载配置
         if (file_exists(config('meedu.save'))) {

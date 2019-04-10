@@ -21,13 +21,14 @@ use App\Models\VideoComment;
 use App\Models\CourseComment;
 use App\Models\RechargePayment;
 use App\Models\UserJoinRoleRecord;
+use Laravel\Passport\HasApiTokens;
 use App\Models\traits\CreatedAtBetween;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable
 {
-    use Notifiable, CreatedAtBetween;
+    use Notifiable, CreatedAtBetween, HasApiTokens;
 
     const ACTIVE_YES = 1;
     const ACTIVE_NO = -1;
@@ -57,6 +58,18 @@ class User extends Authenticatable
     protected $appends = [
         'show_url', 'credit1_text', 'credit2_text', 'credit3_text',
     ];
+
+    /**
+     * 重载passport方法.
+     *
+     * @param $name
+     *
+     * @return mixed
+     */
+    public function findForPassport($name)
+    {
+        return self::whereMobile($name)->first();
+    }
 
     /**
      * 所属角色.
@@ -187,7 +200,7 @@ class User extends Authenticatable
      */
     public function getAvatarAttribute($avatar)
     {
-        return $avatar ?: config('meedu.member.default_avatar');
+        return $avatar ?: url(config('meedu.member.default_avatar'));
     }
 
     /**

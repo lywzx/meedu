@@ -14,7 +14,6 @@ namespace App\Http\Controllers\Frontend;
 use Exception;
 use App\Models\Order;
 use App\Models\Course;
-use App\Models\CourseComment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Notifications\SimpleMessageNotification;
@@ -55,10 +54,7 @@ class CourseController extends FrontendController
     public function commentHandler(CourseOrVideoCommentCreateRequest $request, $courseId)
     {
         $course = Course::findOrFail($courseId);
-        $comment = $course->comments()->save(new CourseComment([
-            'user_id' => Auth::id(),
-            'content' => $request->input('content'),
-        ]));
+        $comment = $course->commentHandler($request->input('content'));
         $comment ? flash('评论成功', 'success') : flash('评论失败');
 
         return back();

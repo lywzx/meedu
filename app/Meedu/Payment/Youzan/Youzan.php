@@ -86,7 +86,7 @@ class Youzan implements Payment
             if (
                 'trade_TradePaid' === $data['type'] &&
                 false === $data['test'] &&
-                'PAID' === $data['status']
+                'TRADE_PAID' === $data['status']
             ) {
                 $msg = json_decode(urldecode($data['msg']), true);
                 event(new PaymentSuccessEvent($msg['qr_info']['qr_id']));

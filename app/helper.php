@@ -73,27 +73,10 @@ if (! function_exists('exception_response')) {
      */
     function exception_response(Exception $exception, string $message = '')
     {
-        return [
+        return response()->json([
             'message' => $message ?: $exception->getMessage(),
             'code' => $exception->getCode() ?: 500,
-        ];
-    }
-}
-
-if (! function_exists('notification_name')) {
-    /**
-     * 获取Notification模板名.
-     *
-     * @param $notificationName
-     *
-     * @return string
-     */
-    function notification_name($notificationName)
-    {
-        $arr = explode('\\', $notificationName);
-        $name = $arr[count($arr) - 1];
-
-        return strtolower($name);
+        ]);
     }
 }
 
@@ -115,34 +98,6 @@ if (! function_exists('at_user')) {
         foreach ($result as $item) {
             event(new \App\Events\AtUserEvent($fromUser, $item, $from, $fromType));
         }
-    }
-}
-
-if (! function_exists('at_notification_parse')) {
-    /**
-     * 艾特Notification内容输出.
-     *
-     * @param $notification
-     *
-     * @return string
-     */
-    function at_notification_parse($notification)
-    {
-        $data = $notification->data;
-        $fromUser = \App\User::find($data['from_user_id']);
-        $model = '\\App\\Models\\'.$data['from_type'];
-        $from = (new $model())->whereId($data['from_id'])->first();
-        $url = 'javascript:void(0)';
-        switch ($data['from_type']) {
-            case 'CourseComment':
-                $url = route('course.show', [$from->course->id, $from->course->slug]);
-                break;
-            case 'VideoComment':
-                $url = route('video.show', [$from->video->course->id, $from->video->id, $from->video->slug]);
-                break;
-        }
-
-        return '<a href="'.$url.'">用户&nbsp;<b>'.$fromUser->nick_name.'</b>&nbsp;提到您啦。</a>';
     }
 }
 
@@ -234,12 +189,7 @@ if (! function_exists('aliyun_play_auth')) {
     function aliyun_play_auth(\App\Models\Video $video)
     {
         try {
-            $profile = \DefaultProfile::getProfile(
-                config('meedu.upload.video.aliyun.region', ''),
-                config('meedu.upload.video.aliyun.access_key_id', ''),
-                config('meedu.upload.video.aliyun.access_key_secret', '')
-            );
-            $client = new \DefaultAcsClient($profile);
+            $client = aliyun_sdk_client();
             $request = new \vod\Request\V20170321\GetVideoPlayAuthRequest();
             $request->setAcceptFormat('JSON');
             $request->setRegionId(config('meedu.upload.video.aliyun.region', ''));
@@ -252,5 +202,100 @@ if (! function_exists('aliyun_play_auth')) {
 
             return '';
         }
+    }
+}
+
+if (! function_exists('aliyun_play_url')) {
+    /**
+     * 获取阿里云的视频播放地址
+     *
+     * @param \App\Models\Video $video
+     *
+     * @return array
+     */
+    function aliyun_play_url(\App\Models\Video $video)
+    {
+        if (! $video->aliyun_video_id) {
+            return [];
+        }
+        try {
+            $client = aliyun_sdk_client();
+            $request = new \vod\Request\V20170321\GetPlayInfoRequest();
+            $request->setVideoId($video->aliyun_video_id);
+            $request->setAuthTimeout(3600 * 3);
+            $request->setAcceptFormat('JSON');
+            $response = $client->getAcsResponse($request);
+            $list = $response->PlayInfoList->PlayInfo;
+            $rows = [];
+            foreach ($list as $item) {
+                $rows[] = [
+                    'format' => $item->Format,
+                    'url' => $item->PlayURL,
+                    'duration' => $item->Duration,
+                ];
+            }
+
+            return $rows;
+        } catch (Exception $exception) {
+            exception_record($exception);
+
+            return [];
+        }
+    }
+}
+
+if (! function_exists('aliyun_sdk_client')) {
+    /**
+     * @return DefaultAcsClient
+     */
+    function aliyun_sdk_client()
+    {
+        $profile = \DefaultProfile::getProfile(
+            config('meedu.upload.video.aliyun.region', ''),
+            config('meedu.upload.video.aliyun.access_key_id', ''),
+            config('meedu.upload.video.aliyun.access_key_secret', '')
+        );
+        $client = new \DefaultAcsClient($profile);
+
+        return $client;
+    }
+}
+
+if (! function_exists('backend_menus')) {
+    /**
+     * 获取当前管理员的专属菜单.
+     *
+     * @return array|mixed
+     */
+    function backend_menus()
+    {
+        $user = admin();
+        if (! $user) {
+            return collect([]);
+        }
+        if ($user->isSuper()) {
+            return (new \App\Models\AdministratorMenu())->menus();
+        }
+        $permissionIds = $user->permissionIds();
+        $permissionIds->push(0);
+        $menus = \App\Models\AdministratorMenu::with('children')
+            ->whereIn('permission_id', $permissionIds)
+            ->rootLevel()
+            ->orderAsc()
+            ->get();
+        $menus = $menus->filter(function ($menu) use ($permissionIds) {
+            if ($menu->children->isEmpty()) {
+                return false;
+            }
+            $permissionIds = $permissionIds->toArray();
+            $children = $menu->children->filter(function ($child) use ($permissionIds) {
+                return in_array($child->permission_id, $permissionIds);
+            });
+            $menu->children = $children;
+
+            return $children->count() != 0;
+        });
+
+        return $menus;
     }
 }
